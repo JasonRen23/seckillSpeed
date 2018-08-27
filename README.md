@@ -48,3 +48,36 @@
     - Cookie的过期时间以用户最后一次登录为准，每登录一次修改过期时间，默认过期时间是两天
     - 通过`UserArgumentResolver`的回调功能将Controller需要的参数注入，减少冗余代码
     
+## 压测
+
+### redis压测(使用redis-benchmark)
+```bash
+redis-benchmark -h 127.0.0.1 -p 6379 -c 100 -n 100000
+```
+100个并发连接 10万个请求
+
+可以达到10万多QPS
+
+![](https://ws1.sinaimg.cn/large/73d640f7ly1fuoqd1x9djj20dx0d4q4d.jpg)
+
+```bash
+redis-benchmark -h 127.0.0.1 -p 6379 -q -d 100
+```
+存取大小为100字节的数据包
+
+![](https://ws1.sinaimg.cn/large/73d640f7ly1fuoqjm0jqpj20k40cj77e.jpg)
+
+```bash
+redis-benchmark -t set,lpush -n 100000 -q
+```
+只测试某些操作的性能
+
+![](https://ws1.sinaimg.cn/large/73d640f7ly1fuoqn2n414j20b901h74e.jpg)
+
+
+```bash
+redis-benchmark -n 100000 -q script load "redis.call('set','foo','bar')"
+```
+只测试某些数值存取的性能
+
+![](https://ws1.sinaimg.cn/large/73d640f7ly1fuoqpz3cikj20md00naa3.jpg)

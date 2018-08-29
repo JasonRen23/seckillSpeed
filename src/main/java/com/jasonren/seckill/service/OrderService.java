@@ -4,6 +4,8 @@ import com.jasonren.seckill.dao.OrderDao;
 import com.jasonren.seckill.domain.OrderInfo;
 import com.jasonren.seckill.domain.SeckillOrder;
 import com.jasonren.seckill.domain.SeckillUser;
+import com.jasonren.seckill.redis.OrderKey;
+import com.jasonren.seckill.redis.RedisService;
 import com.jasonren.seckill.vo.GoodsVo;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,13 +20,21 @@ public class OrderService {
     @Autowired
     OrderDao orderDao;
 
+    @Autowired
+    RedisService redisService;
+
     public SeckillOrder getSeckillOrderById(@Param("userId") long userId,  @Param("goodsId") long goodsId) {
-        return orderDao.getSeckillOrderById(userId, goodsId);
+        return redisService.get(OrderKey.getSeckillOrderByUidGid, "" + userId + "_" + goodsId, SeckillOrder.class);
+        // return orderDao.getSeckillOrderById(userId, goodsId);
+    }
+
+    public OrderInfo getOrderById(final long orderId) {
+        return orderDao.getOrderById(orderId);
     }
 
 
     @Transactional
-    public OrderInfo createOrder(final SeckillUser user, final GoodsVo goods) {
+    public OrderInfo createOrder(SeckillUser user, GoodsVo goods) {
         OrderInfo orderInfo = new OrderInfo();
         orderInfo.setCreateTime(new Date());
         orderInfo.setDeliveryAddrId(0L);
@@ -44,7 +54,10 @@ public class OrderService {
 
         orderDao.insertSeckillOrder(seckillOrder);
 
+        redisService.set(OrderKey.getSeckillOrderByUidGid, "" + user.getId() + "_" + goods.getId(), seckillOrder);
+
         return orderInfo;
     }
+
 
 }

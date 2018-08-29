@@ -11,6 +11,7 @@ import com.jasonren.seckill.util.UUIDUtil;
 import com.jasonren.seckill.vo.LoginVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.util.StringUtils;
 
 import javax.servlet.http.Cookie;
@@ -29,10 +30,43 @@ public class SeckillUserService {
 
 
     public SeckillUser getById(long id) {
-        return seckillUserDao.getById(id);
+
+        //取缓存
+        SeckillUser user = redisService.get(SeckillUserKey.getById, "" + id, SeckillUser.class);
+        if (user != null){
+            return user;
+        }
+        //取数据库
+        user = seckillUserDao.getById(id);
+        if (user != null) {
+            redisService.set(SeckillUserKey.getById, "" + id, user);
+        }
+
+
+        return user;
     }
 
-    public boolean login(HttpServletResponse response, LoginVo loginVo) {
+    @Transactional(rollbackFor = Exception.class)
+    public boolean updatePassWord(String token, long id, String formPass) {
+        //取user
+        SeckillUser user = getById(id);
+        if (user == null) {
+            throw new GlobalException(CodeMsg.MOBILE_NOT_EXIST);
+        }
+        //更新数据库
+        SeckillUser toBeUpdate = new SeckillUser();
+        toBeUpdate.setId(id);
+        toBeUpdate.setPassword(MD5Util.formPassToDBPass(formPass, user.getSalt()));
+        seckillUserDao.update(toBeUpdate);
+        //处理缓存
+        redisService.delete(SeckillUserKey.getById, "" + id);
+        user.setPassword(toBeUpdate.getPassword());
+        redisService.set(SeckillUserKey.token, token, user);
+        return true;
+    }
+
+
+    public String login(HttpServletResponse response, LoginVo loginVo) {
         if (loginVo == null) {
             throw new GlobalException(CodeMsg.SERVER_ERROR);
         }
@@ -56,7 +90,7 @@ public class SeckillUserService {
 
         String token = UUIDUtil.uuid();
         addCookie(response, token, user);
-        return true;
+        return token;
 
     }
 

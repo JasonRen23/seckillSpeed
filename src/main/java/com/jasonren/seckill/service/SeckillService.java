@@ -18,11 +18,14 @@ public class SeckillService {
     OrderService orderService;
 
     @Transactional
-    public OrderInfo seckill(final SeckillUser user, final GoodsVo goods) {
+    public OrderInfo seckill(SeckillUser user, GoodsVo goods) {
         //减库存 下订单 写入秒杀订单
-        goodsService.reduceStock(goods);
-        //order_info seckill_order
-        return orderService.createOrder(user, goods);
+        boolean success = goodsService.reduceStock(goods);
 
+        if (success) {
+            return orderService.createOrder(user, goods);
+        }
+        //order_info seckill_order
+        return null;
     }
 }

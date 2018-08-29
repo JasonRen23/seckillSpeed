@@ -2,7 +2,6 @@ package com.jasonren.seckill.exception;
 
 import com.jasonren.seckill.result.CodeMsg;
 import com.jasonren.seckill.result.Result;
-import com.sun.tools.javac.jvm.Code;
 import org.springframework.validation.BindException;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.ControllerAdvice;

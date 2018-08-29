@@ -104,7 +104,8 @@ redis-benchmark -n 100000 -q script load "redis.call('set','foo','bar')"
 ### 页面缓存和对象缓存
 1. 商品列表页和详情页静态资源缓存在redis中，过期时间为一分钟，每次先去redis里面取，redis中查不到再去mysql访问，并更新缓存
 2. 动态资源通过前端js的ajax动态加载
-3. 
+3. SeckillUserService和OrderService根据id查询的service中对user对象和订单详情对象进行了对象缓存，这样不用每次去访问mysql查询，直接先查询缓存即可，
+更新的缓存的时候需要注意先后顺序，一定是先更新数据库再更新缓存。
 
 
 ### 防止超卖
@@ -120,8 +121,7 @@ update seckill_goods set stock_count=stock_count-1 where goods_id=#{goodsId} and
 alter table seckill_order add unique key(user_id,goods_id);
 ```
 
-3. 多个用户同时进行秒杀操作，同时判断库存不为0，然后均写入写入订单，出现下订单详情异常
-需要在
+3. 多个用户同时进行秒杀操作，同时判断库存不为0，然后均写入写入订单，出现下订单详情异常需要在`SeckillService`中加入如下判断：
 
 ```java
 //减库存 下订单 写入秒杀订单
@@ -131,3 +131,4 @@ alter table seckill_order add unique key(user_id,goods_id);
         return orderService.createOrder(user, goods);
     }
 ```
+

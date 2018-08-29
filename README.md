@@ -49,6 +49,23 @@
     - 通过`UserArgumentResolver`的回调功能将Controller需要的参数注入，减少冗余代码
     
 ## 压测
+### jmeter压测
+
+- 压测商品列表接口`/goods/to_list`
+
+1000个线程循环压测10次后的结果：
+
+做页面优化前：
+
+![](https://ws1.sinaimg.cn/large/73d640f7ly1fuqmauva7gj214d0663zh.jpg)
+
+做页面缓存优化后：
+
+![](https://ws1.sinaimg.cn/large/73d640f7ly1fuqmbwd33rj214h06575a.jpg)
+
+- 压测秒杀接口`/seckill/do_seckill`
+
+这边需要通过UserUtil工具类生成多个用户token，然后通过jmeter配置元件->csv数据文件设置导入token文件
 
 ### redis压测(使用redis-benchmark)
 ```bash
@@ -81,3 +98,36 @@ redis-benchmark -n 100000 -q script load "redis.call('set','foo','bar')"
 只测试某些数值存取的性能
 
 ![](https://ws1.sinaimg.cn/large/73d640f7ly1fuoqpz3cikj20md00naa3.jpg)
+
+## 页面优化
+
+### 页面缓存和对象缓存
+1. 商品列表页和详情页静态资源缓存在redis中，过期时间为一分钟，每次先去redis里面取，redis中查不到再去mysql访问，并更新缓存
+2. 动态资源通过前端js的ajax动态加载
+3. 
+
+
+### 防止超卖
+1. 更新库存在库存量大于0时才更新
+
+```sql
+update seckill_goods set stock_count=stock_count-1 where goods_id=#{goodsId} and stock_count > 0
+```
+
+2. 防止一个用户同事秒杀一个商品两次，为seckill_order表的user_id和goods_id添加联合btree索引
+
+```sql
+alter table seckill_order add unique key(user_id,goods_id);
+```
+
+3. 多个用户同时进行秒杀操作，同时判断库存不为0，然后均写入写入订单，出现下订单详情异常
+需要在
+
+```java
+//减库存 下订单 写入秒杀订单
+    boolean success = goodsService.reduceStock(goods);
+    
+    if (success) {
+        return orderService.createOrder(user, goods);
+    }
+```

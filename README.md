@@ -109,7 +109,7 @@ redis-benchmark -n 100000 -q script load "redis.call('set','foo','bar')"
 
 
 ### 防止超卖
-1. 更新库存在库存量大于0时才更新
+1. SQL加入库存判断，更新库存在库存量大于0时才更新
 
 ```sql
 update seckill_goods set stock_count=stock_count-1 where goods_id=#{goodsId} and stock_count > 0
@@ -132,3 +132,19 @@ alter table seckill_order add unique key(user_id,goods_id);
     }
 ```
 
+## 接口优化
+
+### 减少数据库访问
+1. 系统初始化，把商品库存数量加载到Redis
+2. 收到请求，Redis预减库存，库存不足，直接返回，否则进入3
+3. 请求入队，立即返回排队中
+4. 请求出队，生成订单，减少库存
+5. 客户端轮询，是否秒杀成功
+
+接口优化之前对秒杀接口压测：（1000个线程循环10次）
+
+![](https://ws1.sinaimg.cn/large/73d640f7ly1fuqv2bm872j214c05qwfc.jpg)
+
+优化之后：
+
+![](https://ws1.sinaimg.cn/large/73d640f7ly1fuqv23uv0oj214f05r3zd.jpg)

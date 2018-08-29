@@ -2,6 +2,7 @@ package com.jasonren.seckill.controller;
 
 
 import com.jasonren.seckill.domain.User;
+import com.jasonren.seckill.rabbitmq.MQSender;
 import com.jasonren.seckill.redis.RedisService;
 import com.jasonren.seckill.redis.UserKey;
 import com.jasonren.seckill.result.Result;
@@ -23,6 +24,39 @@ public class SampleController {
     @Autowired
     RedisService redisService;
 
+    @Autowired
+    MQSender sender;
+
+    // @RequestMapping("/mq/header")
+    // @ResponseBody
+    // public Result<String> header() {
+    //     sender.sendHeader("hello");
+    //     return Result.success("Hello World");
+    // }
+    //
+    // @RequestMapping("/mq/fanout")
+    // @ResponseBody
+    // public Result<String> fanout() {
+    //     sender.sendFanout("hello");
+    //     return Result.success("Hello World");
+    // }
+    //
+    // @RequestMapping("/mq/topic")
+    // @ResponseBody
+    // public Result<String> topic() {
+    //     sender.sendTopic("hello");
+    //     return Result.success("Hello World");
+    // }
+    //
+    //
+    // @RequestMapping("/mq")
+    // @ResponseBody
+    // public Result<String> mq() {
+    //     sender.send("hello");
+    //     return Result.success("Hello World");
+    // }
+
+
     @RequestMapping("/thymeleaf")
     public String thymeleaf(Model model) {
         model.addAttribute("name", "Joshua");
@@ -41,7 +75,7 @@ public class SampleController {
     @RequestMapping("/db/tx")
     @ResponseBody
     public Result<Boolean> dbTx() {
-        boolean b =userService.tx();
+        boolean b = userService.tx();
         return Result.success(b);
     }
 

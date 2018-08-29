@@ -17,6 +17,7 @@ public class RedisService {
 
     /**
      * 获取单个对象
+     *
      * @param prefix
      * @param key
      * @param clazz
@@ -39,6 +40,7 @@ public class RedisService {
 
     /**
      * 设置对象
+     *
      * @param prefix
      * @param key
      * @param value
@@ -56,7 +58,7 @@ public class RedisService {
             // 生成真正的key
             String realKey = prefix.getPrefix() + key;
             final int seconds = prefix.expireSeconds();
-            if (seconds <= 0){
+            if (seconds <= 0) {
                 jedis.set(realKey, str);
             } else {
                 jedis.setex(realKey, seconds, str);
@@ -69,6 +71,7 @@ public class RedisService {
 
     /**
      * 判断一个key是否存在
+     *
      * @param prefix
      * @param key
      * @return
@@ -86,7 +89,28 @@ public class RedisService {
     }
 
     /**
+     * 删除
+     *
+     * @param prefix
+     * @param key
+     * @return
+     */
+
+    public boolean delete(KeyPrefix prefix, String key) {
+        Jedis jedis = null;
+        try {
+            jedis = jedisPool.getResource();
+            //生成真正的key
+            String realKey = prefix.getPrefix() + key;
+            return jedis.del(realKey) > 0;
+        } finally {
+            returnToPool(jedis);
+        }
+    }
+
+    /**
      * 增加值
+     *
      * @param prefix
      * @param key
      * @param <T>
@@ -106,6 +130,7 @@ public class RedisService {
 
     /**
      * 减少值
+     *
      * @param prefix
      * @param key
      * @param <T>
@@ -124,9 +149,7 @@ public class RedisService {
     }
 
 
-
-    @SuppressWarnings("unchecked")
-    private <T> String beanToString(final T value) {
+    private static <T> String beanToString(T value) {
         if (value == null) {
             return null;
         }
@@ -142,12 +165,10 @@ public class RedisService {
         return JSON.toJSONString(value);
     }
 
-    @SuppressWarnings("unchecked")
-    private <T> T stringToBean(String str, Class<T> clazz) {
+    public static <T> T stringToBean(String str, Class<T> clazz) {
         if (str == null || str.length() <= 0 || clazz == null) {
             return null;
         }
-
         if (clazz == int.class || clazz == Integer.class) {
             return (T) Integer.valueOf(str);
         } else if (clazz == String.class) {
@@ -157,8 +178,6 @@ public class RedisService {
         } else {
             return JSON.toJavaObject(JSON.parseObject(str), clazz);
         }
-
-
     }
 
     private void returnToPool(Jedis jedis) {

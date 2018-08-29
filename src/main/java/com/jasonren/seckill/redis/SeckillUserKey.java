@@ -9,4 +9,6 @@ public class SeckillUserKey extends BasePrefix{
     }
 
     public static SeckillUserKey token = new SeckillUserKey(TOKEN_EXPRIRE, "tk");
+    public static SeckillUserKey getById = new SeckillUserKey(0, "id");
+
 }

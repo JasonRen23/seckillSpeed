@@ -141,6 +141,11 @@ alter table seckill_order add unique key(user_id,goods_id);
 4. 请求出队，生成订单，减少库存
 5. 客户端轮询，是否秒杀成功
 
+### 缓存库存与数据库库存的一致性问题
+- 秒杀接口实现Spring的`InitializingBean`并重写`afterPropertiesSet`方法，在初始化SeckillController这个Bean时会同步一些数据库和缓存的内存
+- 当预减库存超量时，也即预减库存发现小于0时，再调用一次`afterPropertiesSet`方法同步一下数据库和缓存的库存
+
+
 接口优化之前对秒杀接口压测：（1000个线程循环10次）
 
 ![](https://ws1.sinaimg.cn/large/73d640f7ly1fuqv2bm872j214c05qwfc.jpg)

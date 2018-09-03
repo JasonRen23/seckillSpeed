@@ -1,6 +1,5 @@
 package com.jasonren.seckill.controller;
 
-import com.jasonren.seckill.domain.OrderInfo;
 import com.jasonren.seckill.domain.SeckillOrder;
 import com.jasonren.seckill.domain.SeckillUser;
 import com.jasonren.seckill.rabbitmq.MQSender;
@@ -55,7 +54,7 @@ public class SeckillController implements InitializingBean {
     private Map<Long, Boolean> localOverMap = new HashMap<>();
 
     /**
-     * 系统初始化
+     * 系统初始化，将商品信息加载到redis和本地内存
      */
     @Override
     public void afterPropertiesSet() {
@@ -74,11 +73,10 @@ public class SeckillController implements InitializingBean {
     @RequestMapping(value = "/do_seckill", method = RequestMethod.POST)
     @ResponseBody
     public Result<Integer> seckill(Model model, SeckillUser user,
-                                  @RequestParam("goodsId") long goodsId) {
+                                   @RequestParam("goodsId") long goodsId) {
 
         model.addAttribute("user", user);
         if (user == null) {
-            logger.info("null!!!");
             return Result.error(CodeMsg.SESSION_ERROR);
         }
         //内存标记，减少redis访问
@@ -91,8 +89,12 @@ public class SeckillController implements InitializingBean {
         //预减库存
         long stock = redisService.decr(GoodsKey.getSeckillGoodsStock, "" + goodsId);
         if (stock < 0) {
-            localOverMap.put(goodsId, true);
-            return Result.error(CodeMsg.SECKILL_OVER);
+            afterPropertiesSet();
+            long stock2 = redisService.decr(GoodsKey.getSeckillGoodsStock, "" + goodsId);
+            if (stock2 < 0) {
+                localOverMap.put(goodsId, true);
+                return Result.error(CodeMsg.SECKILL_OVER);
+            }
         }
 
 
@@ -106,7 +108,7 @@ public class SeckillController implements InitializingBean {
         //判断是否秒杀到了
         SeckillOrder order = orderService.getSeckillOrderById(user.getId(), goodsId);
         if (order != null) {
-            return Result.error(CodeMsg.REPEATE_SECKILL);
+            return Result.error(CodeMsg.REPEAT_SECKILL);
         }
 
         //入队
@@ -126,7 +128,7 @@ public class SeckillController implements InitializingBean {
     @RequestMapping(value = "/result", method = RequestMethod.GET)
     @ResponseBody
     public Result<Long> seckillResult(Model model, SeckillUser user,
-                                @RequestParam("goodsId") long goodsId) {
+                                      @RequestParam("goodsId") long goodsId) {
         model.addAttribute("user", user);
         if (user == null) {
             return Result.error(CodeMsg.SESSION_ERROR);

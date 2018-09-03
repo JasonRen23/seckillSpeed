@@ -121,7 +121,7 @@ update seckill_goods set stock_count=stock_count-1 where goods_id=#{goodsId} and
 alter table seckill_order add unique key(user_id,goods_id);
 ```
 
-3. 多个用户同时进行秒杀操作，同时判断库存不为0，然后均写入写入订单，出现下订单详情异常需要在`SeckillService`中加入如下判断：
+3. 多个用户同时进行秒杀操作，同时判断库存不为0，然后均写入订单，出现下订单详情异常需要在`SeckillService`中加入如下判断：
 
 ```java
 //减库存 下订单 写入秒杀订单

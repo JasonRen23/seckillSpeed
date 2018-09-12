@@ -92,6 +92,6 @@ public class UserUtil {
     }
 
     public static void main(String[] args) throws Exception {
-        createUser(1000);
+        createUser(5000);
     }
 }
